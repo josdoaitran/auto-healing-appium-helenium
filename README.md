@@ -1,6 +1,6 @@
-# Auto-Healing Appium-Selenium Test Framework
+# Auto-Healing Appium-Selenium (Helenium) Test Framework
 
-A Java test automation framework that combines Appium and Selenium with TestNG for mobile and web testing, featuring auto-healing capabilities.
+A Java test automation framework that combines Appium and Selenium with TestNG for mobile and web testing, featuring advanced auto-healing capabilities.
 
 ## Prerequisites
 
@@ -21,64 +21,84 @@ A Java test automation framework that combines Appium and Selenium with TestNG f
     │   │   └── com
     │   │       └── example
     │   │           └── utils
-    │   │               ├── AutoHealingDriver.java  # Auto-healing driver wrapper
-    │   │               └── LoggingUtils.java       # Logging utilities
+    │   │               ├── AutoHealingDriver.java     # Original auto-healing driver (legacy)
+    │   │               ├── AutoHealingElement.java    # Auto-healing WebElement implementation
+    │   │               ├── ElementLocatorRepository.java # Repository for locator strategies
+    │   │               ├── HeleniumDriver.java        # Improved Appium wrapper with healing
+    │   │               └── LoggingUtils.java          # Logging utilities
     │   └── resources
-    │       └── logback.xml              # Logback configuration
+    │       ├── logback.xml                # Logback configuration
+    │       └── locators                   # Locator properties files
+    │           └── LoginPage.properties   # Example locator definitions
     └── test
         └── java
             └── com
                 └── example
                     └── tests
-                        └── SampleAppiumTest.java   # Sample test class
+                        ├── SampleAppiumTest.java     # Original sample test
+                        └── HeleniumMobileTest.java   # Advanced Helenium test
 ```
 
-## Auto-Healing Features
+## Auto-Healing Architecture
 
-This framework implements a basic auto-healing mechanism that:
+The framework provides a robust approach to element locator healing for mobile applications:
 
-1. Tries multiple locator strategies when an element can't be found
-2. Falls back to alternative locators in a specified order
-3. Logs successful alternative strategies for potential learning
-4. Provides a clean API for common actions (click, sendKeys, getText)
+1. **Locator Strategy Repository**
+   - Centralized storage of element locators
+   - Multiple strategies per element stored in properties files
+   - Automatic tracking of the most successful strategies
 
-Example usage in tests:
+2. **Self-Healing Elements**
+   - WebElement wrapper with auto-healing capabilities
+   - Dynamically switches between locator strategies on failure
+   - Caches elements for improved performance
+   - Implements the full WebElement interface
+
+3. **Advanced HeleniumDriver**
+   - Extends Appium's capabilities with healing powers
+   - Persistent healing across test runs
+   - Transparent healing with no test code changes needed
+   - Comprehensive healing statistics and reports
+
+4. **Easy Configuration**
+   - Simple properties file format for locator definitions
+   - Format: `elementType=locatorType=value;alternativeType=value`
+   - Automatic loading and parsing of locator files
+
+## Healing Process
+
+When an element cannot be found:
+
+1. The framework attempts to locate it with the primary (best known) strategy
+2. If that fails, it systematically tries alternative strategies
+3. Upon success, it records the working strategy for future use
+4. The healing event is logged for analysis and reporting
+5. Future test runs automatically use the previously successful strategy first
+
+## Example Usage
+
+### Locator Definition (in properties file)
+
+```properties
+# Format: locatorType=value;alternativeType=value;...
+usernameField=id=username;xpath=//input[@name='username'];accessibilityid=username-input
+```
+
+### Using Elements in Tests
 
 ```java
-// Multiple locator strategies are provided as fallbacks
-String headerText = autoHealingDriver.getText(
-    By.tagName("h1"),                            // Primary locator
-    By.xpath("//h1"),                            // Alternative 1
-    By.cssSelector("div > h1"),                  // Alternative 2
-    By.xpath("//*[contains(text(), 'Example')]") // Alternative 3
+// Simple usage referencing an element by ID
+AutoHealingElement usernameField = driver.findElement("LoginPage.usernameField");
+usernameField.sendKeys("testuser");
+
+// Dynamic definition with healing capabilities
+driver.findElement(
+    By.id("login-button"),     // Primary strategy
+    "LoginPage.loginButton",   // Element ID
+    By.xpath("//button[@type='submit']"),  // Alternative 1
+    By.accessibilityId("login-button")     // Alternative 2
 );
 ```
-
-## Logging Implementation
-
-The framework uses Logback for efficient and flexible logging:
-
-1. **Console and File Logging**:
-   - Console output for immediate visibility
-   - File logging for persistent records
-
-2. **Healing Event Tracking**:
-   - CSV format logging of all healing events
-   - Records timestamps, failed locators, successful alternatives
-
-3. **Sensitive Data Masking**:
-   - Automatic masking of passwords and sensitive information
-   - Configurable patterns for different types of sensitive data
-
-4. **Log Levels**:
-   - DEBUG: Detailed tracing information
-   - INFO: Normal application behavior
-   - WARN: Issues that can be recovered from
-   - ERROR: Application failures
-
-5. **Healing Analytics**:
-   - Generation of basic statistics on healing events
-   - Support for advanced analytics through CSV log processing
 
 ## Setup
 
@@ -92,32 +112,34 @@ The framework uses Logback for efficient and flexible logging:
    appium
    ```
 
-3. Configure device capabilities in the test class:
-   - Update the `isAndroid` flag based on your target platform
-   - Set the correct `deviceName` and other capabilities
-   - Uncomment and update the `app` capability with path to your app
+3. Define your element locators in properties files:
+   - Create files in `src/main/resources/locators/`
+   - Name them according to screens/pages (e.g., `LoginPage.properties`)
+   - Define multiple locator strategies for each element
 
-## Running Tests
+4. Run tests using Maven:
+   ```
+   mvn clean test
+   ```
 
-Run tests using Maven:
+## Advanced Features
 
-```
-mvn clean test
-```
+1. **Healing Analytics**
+   - CSV format logging of all healing events
+   - Statistical reports on healing activity
+   - Identification of fragile locators
 
-## Customization
+2. **Persistent Healing History**
+   - Auto-healing data persists between test runs
+   - Gradual improvement of test reliability over time
+   - Automatic adaptation to UI changes
 
-- Add your test classes to the `src/test/java/com/example/tests` directory
-- Update the `testng.xml` file to include your test classes
-- Modify the capabilities in the test setup according to your device/emulator configuration
-- Adjust the `logback.xml` file to customize logging behavior
+3. **Mobile-Specific Locators**
+   - Support for AccessibilityId and other mobile-specific locators
+   - Easy configuration for both Android and iOS
+   - Optimized for native, hybrid, and web apps
 
-## Extending the Auto-Healing Capabilities
-
-The current implementation can be extended with:
-
-1. Persistence of successful alternative locators
-2. Machine learning to identify patterns in UI changes
-3. Visual element recognition as a fallback strategy
-4. Automatic generation of alternative locators
-5. Reporting of healing activities for better maintainability 
+4. **Security & Performance**
+   - Automatic masking of sensitive data in logs
+   - Element caching for better performance
+   - Smart reuse of successful locator strategies 
