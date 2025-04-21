@@ -4,6 +4,7 @@
     <test name="UI Tests">
         <classes>
             <class name="com.example.tests.SampleAppiumTest"/>
+            <class name="com.example.tests.HeleniumMobileTest"/>
             <!-- Add more test classes here as needed -->
         </classes>
     </test>
